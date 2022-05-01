@@ -1,0 +1,49 @@
+device: cuda
+data:
+  name: maestro
+  path: /home/ubuntu/test_rrnt/data/MAESTRO
+  batch_size: 32
+  seed: 12345688
+  sample_rate: 16000
+  max_shift_steps: 200
+  steps_per_second: 100
+model:
+  encoder:
+    input_size: 512
+    hidden_size: 1024
+    num_layers: 4
+    dropout: 0.2
+  decoder:
+    vocab_size: 560
+    embedding_dim: 512
+    decoder_hidden_size: 2048
+    encoder_hidden_size: 1024
+    num_layers: 1 
+    sos_id: 2
+    eos_id: 1
+training:
+    load_model: False
+    eval_or_not: True
+    seed: 20
+    num_gpu: 1
+    epochs: 600000
+    max_grad_norm: 3
+    visualization: True
+    show_interval: 10
+    save_interval: 50
+    eval_interval: 1
+    save_model: las_model
+    beam_size: 1
+    nbest: 1
+    decode_max_len: 300
+continue_training:
+  model_path: /home/ubuntu/test_rrnt/egs/maestro/exp/las_model/las_model.epoch849.chkpt
+  start_epoch: 800
+optim:
+    type: adamW
+    lr: 0.001
+    momentum: 0.9
+    decay_ratio: 0.98
+    weight_decay: 0
+    begin_to_adjust_lr: 50
+continue_path: None

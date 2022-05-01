@@ -1,0 +1,6 @@
+data_input/
+__pycache__/
+*.code_workspace
+data/MAESTRO/
+*.mid
+
