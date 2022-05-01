@@ -195,8 +195,8 @@ def collate_fn(batch):
         audio_lengths.append(item['audio_length'])
         labels_lengths.append(item['label_length'])
   
-    audio_batch = pad_sequence(audios, True)
-    label_batch = pad_sequence(labels, False)
+    audio_batch = pad_sequence(audios, audio=True)
+    label_batch = pad_sequence(labels, audio=False)
     audio_lengths = torch.Tensor(audio_lengths)
     labels_lengths = torch.Tensor(labels_lengths)
     

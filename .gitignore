@@ -1,6 +1,6 @@
 data_input/
 __pycache__/
-*.code_workspace
+*.code-workspace
 data/MAESTRO/
 *.mid
-
+.DS_Store
