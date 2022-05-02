@@ -16,7 +16,7 @@ def pad_list(xs, pad_value):
     return pad
 
 def pad_sequence(batch, audio=True):
-    if audio:
+    if audio==True:
         batch = torch.nn.utils.rnn.pad_sequence(batch, batch_first=True, padding_value=0)
     else:
         batch = torch.nn.utils.rnn.pad_sequence(batch, batch_first=True, padding_value=-1)

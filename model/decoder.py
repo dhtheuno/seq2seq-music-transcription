@@ -67,7 +67,6 @@ class Decoder(nn.Module):
 
 
     def forward(self, inputs, encoder_outputs):
-
         # Going to use Teacher Forcing all the time
         targets = [t[t != IGNORE_ID] for t in inputs]
         eos = targets[0].new([self.eos_id])
@@ -103,6 +102,8 @@ class Decoder(nn.Module):
         
         output_distributions = torch.stack(output_distributions, dim=1)
         output_distributions = output_distributions.view(batch_size*output_length, self.vocab_size)
+        #output_distributions = output_distributions.permute(0,2,1)
+        #print(decoder_outputs[0])
         loss = self.loss(output_distributions, decoder_outputs.view(-1))
         return loss
 

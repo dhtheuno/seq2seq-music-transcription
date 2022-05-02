@@ -48,7 +48,7 @@ class MidiAudioDataset(Dataset):
     def __getitem__(self, index):
         data = self.data[index]
 
-        sequence_length = np.random.randint(1,300)
+        sequence_length = np.random.randint(1,200)
         frames_length = data['frames'].shape[0]
         start_seuqnece = np.random.randint(0,int(frames_length-sequence_length))
         end_sequence = start_seuqnece+sequence_length
@@ -67,6 +67,8 @@ class MidiAudioDataset(Dataset):
         
         audio = torch.FloatTensor(audio)
         label = torch.LongTensor(self.vocab._encode(output['targets']))
+        #label = torch.LongTensor((output['targets']))
+
 
         audio_length = int(audio.shape[0])
         label_length = int(target_length)

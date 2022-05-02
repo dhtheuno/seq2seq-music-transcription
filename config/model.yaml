@@ -1,11 +1,11 @@
 device: cuda
 data:
   name: maestro
-  path: /home/ubuntu/test_rrnt/data/MAESTRO
-  batch_size: 32
+  path: /home/ubuntu/seq2seq-music-transcription/data/MAESTRO
+  batch_size: 64
   seed: 12345688
   sample_rate: 16000
-  max_shift_steps: 200
+  max_shift_steps: 300
   steps_per_second: 100
 model:
   encoder:
@@ -29,9 +29,9 @@ training:
     epochs: 600000
     max_grad_norm: 3
     visualization: True
-    show_interval: 10
-    save_interval: 50
-    eval_interval: 1
+    show_interval: 100
+    save_interval: 200
+    eval_interval: 50
     save_model: las_model
     beam_size: 1
     nbest: 1
@@ -40,7 +40,7 @@ continue_training:
   model_path: /home/ubuntu/test_rrnt/egs/maestro/exp/las_model/las_model.epoch849.chkpt
   start_epoch: 800
 optim:
-    type: adamW
+    type: adamw
     lr: 0.001
     momentum: 0.9
     decay_ratio: 0.98

@@ -27,7 +27,8 @@ def train(epoch, config, model, training_dataloader, optimizer, logger, visualiz
         
         if config.training.num_gpu > 0:
             audio_batch = audio_batch.cuda()
-            audio_lengths = audio_lengths.cuda()
+            label_batch = label_batch.cuda()
+            #audio_lengths = audio_lengths.cuda()
     
         start= time.process_time()
         optimizer.zero_grad()
@@ -73,7 +74,7 @@ def eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer=
     for step, (audio_batch, label_batch, audio_lengths, labels_lengths) in enumerate(validation_dataloader):
         if config.training.num_gpu > 0:
             audio_batch = audio_batch.cuda()
-            audio_lengths = audio_lengths.cuda()
+            #audio_lengths = audio_lengths.cuda()
             label_batch = label_batch.cuda()
         loss = model(audio_batch, audio_lengths, label_batch)
         total_loss += loss.item()
@@ -83,8 +84,9 @@ def eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer=
             logger.info('-Validation-Epoch:%d(%.5f%%), avg_val_loss: %.5f %%' % (epoch, process, avg_loss))
     
     check = model.recognize(audio_batch[0], audio_lengths[0].unsqueeze(0), config)
-    pred_output = vocab._decode(check.cpu().numpy())
-    check = label_batch[0][:labels_lengths[0]].cpu().numpy()
+    #print(check)
+    pred_output = vocab._decode(check)
+    check = label_batch[0][:int(labels_lengths[0])].tolist()
     ref_output = vocab._decode(check)
        
     logger.info('-Validation-Epoch:%4d, AverageLoss: %.5f %%' %
@@ -141,7 +143,7 @@ def main():
         shuffle = True,
         collate_fn = collate_fn,
         worker_init_fn = worker_init_fn,
-        num_workers=2 )
+        num_workers=10)
     logger.info('Load Train Set!')
     
     validation_dataset =MAESTRO(
@@ -157,7 +159,7 @@ def main():
         shuffle=False,
         collate_fn = collate_fn,
         worker_init_fn = worker_init_fn,
-        num_workers=2)
+        num_workers=10)
     logger.info('Load Dev Set!')
 
     if config.training.num_gpu > 0:
@@ -195,13 +197,17 @@ def main():
         train(epoch, config, model, training_dataloader,
               optimizer, logger, visualizer)
     
-    if (epoch+1)% config.training.eval_interval == 0:
-        eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer)
+        if (epoch+1) % config.training.eval_interval == 0:
+            eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer)
         
-    if (epoch+1) % config.training.save_interval == 0:
-        save_name = os.path.join(exp_name, '%s.epoch%d.chkpt' % (config.training.save_model, epoch))
-        model_states = model.save_las_model(model, epoch)
-        torch.save(model_states, save_name)
-        logger.info('Epoch %d model has been saved.' % epoch)
-    else:
-        logger.info('skipp saving')
+        if (epoch+1) % config.training.save_interval == 0:
+            save_name = os.path.join(exp_name, '%s.epoch%d.chkpt' % (config.training.save_model, epoch))
+            model_states = model.get_model_state(model, epoch)
+            torch.save(model_states, save_name)
+            logger.info('Epoch %d model has been saved.' % epoch)
+            logger.info('current global step %d' %optimizer.global_step)
+        else:
+            logger.info('current global step %d' %optimizer.global_step)
+            logger.info('skipp saving')
+if __name__ == '__main__':
+    main()

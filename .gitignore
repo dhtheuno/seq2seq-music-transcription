@@ -4,3 +4,4 @@ __pycache__/
 data/MAESTRO/
 *.mid
 .DS_Store
+MAESTRO/
