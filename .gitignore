@@ -5,3 +5,4 @@ data/MAESTRO/
 *.mid
 .DS_Store
 MAESTRO/
+test_data/

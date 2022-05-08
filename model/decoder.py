@@ -106,7 +106,8 @@ class Decoder(nn.Module):
         #print(decoder_outputs[0])
         loss = self.loss(output_distributions, decoder_outputs.view(-1))
         return loss
-
+    
+    @torch.no_grad()
     def greedy_decoding(self, encoder_outputs):
         maxlen = 200
         h_list = [self.zero_state(encoder_outputs.unsqueeze(0))]
@@ -145,7 +146,7 @@ class Decoder(nn.Module):
             y[0] = prediction
             predictions.append(prediction)
         return predictions
-    
+    @torch.no_grad()
     def greedy_batch_decode(self, encoder_padded_outputs):
         max_len = 500
         h_list = [self.zero_state(encoder_padded_outputs)]

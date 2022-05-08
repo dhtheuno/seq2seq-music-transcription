@@ -19,6 +19,7 @@ class ListenAttendSpell(nn.Module):
         loss = self.decoder(targets, encoder_outputs)
         return loss
     
+    @torch.no_grad()
     def recognize(self, input, input_length, config, batch=False, gpu=False):
         if not batch:
             encoder_outputs, _ = self.encoder(input.unsqueeze(0), input_length)

@@ -36,6 +36,20 @@ def audio_to_frames(
     times = np.arange(num_frames) / spectrogram_config.frames_per_second
     return frames, times
 
+def _audio_to_frames(
+    samples: Sequence[float],
+    spectrogram_config: spectrograms.SpectrogramConfig,
+    ) -> Tuple[Sequence[Sequence[int]], np.ndarray]:
+    """Convert audio samples to non-overlapping frames and frame times."""
+    frame_size = spectrogram_config.hop_width
+    samples = np.pad(samples,
+                    [0, frame_size - len(samples) % frame_size],
+                    mode='constant')
+    frames = spectrograms.split_audio(samples, spectrogram_config)
+    num_frames = len(samples) // frame_size
+    times = np.arange(num_frames) / spectrogram_config.frames_per_second
+    return frames, times
+
 class AttrDict(dict):
     """
     Dictionary whose keys can be accessed as attributes.
