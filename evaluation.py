@@ -159,22 +159,35 @@ def make_pred_ns(audio_data, times, codec, vocab, model, config, is_gpu=False):
     ns = encoding_spec.flush_decoding_state_fn(state)
     return ns
 
-def make_batch_pred_ns(data, codec, vocab, model, is_gpu=False):
+def make_batch_pred_ns(data, config, codec, vocab, model, is_gpu=False):
     batch_size = 32
     audio_batch = [torch.from_numpy(i).float() for i in data['segmented_spectrograms']]
-    audio_batch = pad_sequence(audio_batch, -1)
+    audio_batch = pad_sequence(audio_batch,1)
     total_length = audio_batch.size(0)
     audio_length = [len(i) for i in data['segmented_spectrograms']]
     audio_length = torch.tensor(audio_length, dtype=torch.int)
     audio_batchs = [audio_batch[i:i+batch_size, : ,: ] for i in range(0, total_length, batch_size)]
     audio_lengths = [audio_length[i:i+batch_size] for i in range(0, total_length, batch_size)]
     outputs = []
+    
     for audio_batch, audio_length in zip(audio_batchs, audio_lengths):
         if is_gpu:
             audio_batch = audio_batch.cuda()
-        output = model.batch_greedy_recognize(audio_batch,audio_length)
+        #recognize(self, input, config, input_length, batch=False, gpu=False)
+        output = model.recognize(audio_batch,audio_length,config, batch=True, gpu=True)
+        check = []
         output = output.cpu().detach().tolist()
-        outputs += output
+        for i in output:
+            try:
+                test= i.index(1)
+                check.append(i[:test])
+            except:
+                check.append(i)
+        #print("wopw")
+        #print(output)
+        outputs += check
+        #print("testst")
+        #print(outputs)
     encoding_spec = note_sequences.NoteEncodingSpec
     init_state_fn=encoding_spec.init_decoding_state_fn
 

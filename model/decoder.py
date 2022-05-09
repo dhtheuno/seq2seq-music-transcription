@@ -146,6 +146,7 @@ class Decoder(nn.Module):
             y[0] = prediction
             predictions.append(prediction)
         return predictions
+    
     @torch.no_grad()
     def greedy_batch_decode(self, encoder_padded_outputs):
         max_len = 500
@@ -155,7 +156,7 @@ class Decoder(nn.Module):
             h_list.append(self.zero_state(encoder_padded_outputs))
             c_list.append(self.zero_state(encoder_padded_outputs))
         att_c = self.zero_state(encoder_padded_outputs,
-                                H=encoder_padded_outputs.size(2))
+                                hidden_size=encoder_padded_outputs.size(2))
         
         batch_size = encoder_padded_outputs.size(0)
         y_all = torch.LongTensor([[self.sos_id]for _ in range(batch_size)])
@@ -180,7 +181,7 @@ class Decoder(nn.Module):
             att_c = att_c.squeeze(dim=1)
         
             mlp_input = torch.cat((rnn_output, att_c), dim=1)
-            predicted_y_t = self.mlp(mlp_input)
+            predicted_y_t = self.linear(mlp_input)
             local_scores = F.log_softmax(predicted_y_t, dim=1)
             prediction = torch.argmax(local_scores, dim=1).unsqueeze(1)
             y_all = torch.cat((y_all, prediction), dim=1)

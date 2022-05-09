@@ -6,3 +6,4 @@ data/MAESTRO/
 .DS_Store
 MAESTRO/
 test_data/
+predicted_output/
