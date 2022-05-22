@@ -1,5 +1,5 @@
 echo deleting pt
-for f in MAESTRO/*/*.pt;
+for f in MAESTRO/*/*_wav.pt;
     do rm "$f";
 done
 echo deleting tsv

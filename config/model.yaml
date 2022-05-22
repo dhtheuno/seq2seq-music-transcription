@@ -10,14 +10,14 @@ data:
 model:
   encoder:
     input_size: 512
-    hidden_size: 1024
+    hidden_size: 512
     num_layers: 4
     dropout: 0.2
   decoder:
     vocab_size: 560
-    embedding_dim: 512
-    decoder_hidden_size: 2048
-    encoder_hidden_size: 1024
+    embedding_dim: 640
+    decoder_hidden_size: 1024
+    encoder_hidden_size: 512
     num_layers: 1 
     sos_id: 2
     eos_id: 1
@@ -27,12 +27,12 @@ training:
     seed: 20
     num_gpu: 1
     epochs: 600000
-    max_grad_norm: 3
+    max_grad_norm: 5
     visualization: True
     show_interval: 100
     save_interval: 200
-    eval_interval: 50
-    save_model: las_model
+    eval_interval: 200
+    save_model: las_model3
     beam_size: 1
     nbest: 1
     decode_max_len: 300
@@ -40,7 +40,7 @@ continue_training:
   model_path: /home/ubuntu/test_rrnt/egs/maestro/exp/las_model/las_model.epoch849.chkpt
   start_epoch: 800
 optim:
-    type: adamw
+    type: adam
     lr: 0.001
     momentum: 0.9
     decay_ratio: 0.98

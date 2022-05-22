@@ -61,8 +61,8 @@ def build_optimizer(parameters, config):
         return optim.AdamW(
             params=parameters,
             lr=config.lr,
-            betas=(0.9, 0.98),
-            eps=1e-08,
+            #betas=(0.9, 0.98),
+            #eps=1e-08,
             #weight_decay=config.weight_decay
         )
     else:

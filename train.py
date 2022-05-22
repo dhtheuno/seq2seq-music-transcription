@@ -6,6 +6,7 @@ import note_seq
 import torch
 import torch.nn as nn
 import time
+import random
 from tensorboardX import SummaryWriter
 from optim import Optimizer
 from model.encoder import build_encoder
@@ -33,7 +34,7 @@ def train(epoch, config, model, training_dataloader, optimizer, logger, visualiz
         start= time.process_time()
         optimizer.zero_grad()
         
-        loss = model(audio_batch, audio_lengths, label_batch)
+        loss = model(audio_batch, audio_lengths, label_batch, labels_lengths)
         if config.training.num_gpu > 1:
             loss = torch.mean(loss)
         
@@ -76,17 +77,18 @@ def eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer=
             audio_batch = audio_batch.cuda()
             #audio_lengths = audio_lengths.cuda()
             label_batch = label_batch.cuda()
-        loss = model(audio_batch, audio_lengths, label_batch)
+        loss = model(audio_batch, audio_lengths, label_batch, labels_lengths)
         total_loss += loss.item()
         avg_loss = total_loss / (step + 1)
+        '''
         if step % config.training.show_interval == 0:
             process = step / batch_steps * 100
             logger.info('-Validation-Epoch:%d(%.5f%%), avg_val_loss: %.5f %%' % (epoch, process, avg_loss))
-    
-    check = model.recognize(audio_batch[0], audio_lengths[0].unsqueeze(0), config)
+        '''
+    check = model.recognize(audio_batch[0], audio_lengths[0].unsqueeze(0))
     #print(check)
     pred_output = vocab._decode(check)
-    check = label_batch[0][:int(labels_lengths[0])].tolist()
+    check = label_batch[0][:int(labels_lengths[0])-1].tolist()
     ref_output = vocab._decode(check)
        
     logger.info('-Validation-Epoch:%4d, AverageLoss: %.5f %%' %
@@ -95,7 +97,7 @@ def eval(epoch, config, model, validation_dataloader, logger, vocab, visualizer=
     logger.info(pred_output)
     logger.info("reference output")
     logger.info(ref_output)         
-    
+    logger.info("check for the random: %d" %labels_lengths[0])
     if visualizer is not None:
         visualizer.add_scalar('avg_val_loss', avg_loss, epoch)
 
@@ -142,8 +144,8 @@ def main():
         batch_size = config.data.batch_size * config.training.num_gpu,
         shuffle = True,
         collate_fn = collate_fn,
-        worker_init_fn = worker_init_fn,
-        num_workers=10)
+        #worker_init_fn = worker_init_fn,
+        num_workers=4)
     logger.info('Load Train Set!')
     
     validation_dataset =MAESTRO(
@@ -158,19 +160,22 @@ def main():
         batch_size = config.data.batch_size * config.training.num_gpu,
         shuffle=False,
         collate_fn = collate_fn,
-        worker_init_fn = worker_init_fn,
-        num_workers=10)
+        #worker_init_fn = worker_init_fn,
+        num_workers=3)
     logger.info('Load Dev Set!')
-
+    random.seed(100)
     if config.training.num_gpu > 0:
         torch.cuda.manual_seed(config.training.seed)
         torch.backends.cudnn.deterministic = True
     else:
         torch.manual_seed(config.training.seed)
     logger.info('Set random seed: %d' % config.training.seed)
-    
-    config.model.decoder.vocab_size = validation_dataset.vocab_size
-    logger.info('Total vocab size: %d' % validation_dataset.vocab_size)
+    vocab_size = vocab._base_vocab_size
+    logger.info("this is the actual vocab size %d" %vocab_size)
+    embedding_size = vocabularies.num_embeddings(vocab)
+    logger.info("embedding size %d "%embedding_size )
+    config.model.decoder.vocab_size = vocab_size
+    logger.info('Total vocab size: %d'% validation_dataset.vocab_size)
 
     encoder = build_encoder(config.model.encoder)
     decoder = build_decoder(config.model.decoder)

@@ -6,6 +6,17 @@ from utils import IGNORE_ID, pad_list
 
 from model.attention import DotProductAttention
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+def generate_mask(lens):
+    #lens = torch.tensor(lens).to(DEVICE)
+    lens = lens.to(DEVICE)
+    max_len = int(torch.max(lens))
+    mask = (torch.arange(0, max_len).repeat(lens.size(0), 1).to(DEVICE) < \
+                lens.unsqueeze(1).expand(lens.size(0), max_len)).int()
+    return mask
+
+
 class Decoder(nn.Module):
     def __init__(
         self,
@@ -46,8 +57,8 @@ class Decoder(nn.Module):
             nn.Tanh(),
             nn.Linear(self.decoder_hidden_size, self.vocab_size))
         
-        self.loss = nn.CrossEntropyLoss(
-            ignore_index = IGNORE_ID)
+        #self.crit = nn.CrossEntropyLoss(reduction='none')
+        self.crit = nn.CrossEntropyLoss(ignore_index = -1)
 
     def zero_state(self, encoder_outputs, hidden_size=None):
         batch_size = encoder_outputs.size(0)
@@ -66,26 +77,32 @@ class Decoder(nn.Module):
         return previous_hidden, previous_context, initial_context
 
 
-    def forward(self, inputs, encoder_outputs):
+    def forward(self, inputs, encoder_outputs, target_lengths):
         # Going to use Teacher Forcing all the time
+        #print(inputs.size())
         targets = [t[t != IGNORE_ID] for t in inputs]
         eos = targets[0].new([self.eos_id])
         sos = targets[0].new([self.sos_id])
         decoder_inputs = [torch.cat([sos, target], dim=0) for target in targets]
         decoder_outputs = [torch.cat([target, eos], dim=0) for target in targets]
 
-        decoder_inputs = pad_list(decoder_inputs, self.eos_id)
-        decoder_outputs = pad_list(decoder_outputs, IGNORE_ID)
+        #decoder_inputs = pad_list(decoder_inputs, self.eos_id)
+        #decoder_inputs = pad_list(decoder_inputs, self.eos_id)
+        #decoder_outputs = pad_list(decoder_outputs, 0)
 
+
+        decoder_inputs = nn.utils.rnn.pad_sequence(decoder_inputs, batch_first=True, padding_value=self.eos_id)
+        decoder_outputs = nn.utils.rnn.pad_sequence(decoder_outputs, batch_first=True, padding_value=IGNORE_ID)
+        #print(decoder_outputs.size())
         assert decoder_inputs.size() == decoder_outputs.size()
         batch_size, output_length = decoder_inputs.size(0), decoder_inputs.size(1)
 
-        previous_hidden, previous_context, initial_context = self.initalize_decoder(encoder_outputs)
+        previous_hidden, previous_context, attention_context = self.initalize_decoder(encoder_outputs)
         output_distributions = list()
 
         embedded_output = self.embedding(decoder_inputs)
         for t in range(output_length):
-            rnn_input = torch.cat((embedded_output[:, t, :], initial_context), dim=1)
+            rnn_input = torch.cat((embedded_output[:, t, :], attention_context), dim=1)
             previous_hidden[0], previous_context[0] = self.rnn[0](
                 rnn_input, (previous_hidden[0], previous_context[0]))
             for l in range(1, self.num_layers):
@@ -101,15 +118,19 @@ class Decoder(nn.Module):
             output_distributions.append(output_distribution)
         
         output_distributions = torch.stack(output_distributions, dim=1)
+        #output_distributions  = output_distributions.permute(0,2,1)
         output_distributions = output_distributions.view(batch_size*output_length, self.vocab_size)
-        #output_distributions = output_distributions.permute(0,2,1)
-        #print(decoder_outputs[0])
-        loss = self.loss(output_distributions, decoder_outputs.view(-1))
+        loss = self.crit(output_distributions, decoder_outputs.view(-1))
+        #loss = self.crit(output_distributions, decoder_outputs)
+
+        #mask = generate_mask(target_lengths).to(DEVICE)
+
+        #masked_loss = torch.sum(loss * mask.view(-1)) / torch.sum(mask)
+        #return masked_loss
         return loss
-    
     @torch.no_grad()
     def greedy_decoding(self, encoder_outputs):
-        maxlen = 200
+        maxlen = 300
         h_list = [self.zero_state(encoder_outputs.unsqueeze(0))]
         c_list = [self.zero_state(encoder_outputs.unsqueeze(0))]
         for l in range(1, self.num_layers):

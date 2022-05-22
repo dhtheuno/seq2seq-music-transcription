@@ -174,7 +174,7 @@ def make_batch_pred_ns(data, config, codec, vocab, model, is_gpu=False):
         if is_gpu:
             audio_batch = audio_batch.cuda()
         #recognize(self, input, config, input_length, batch=False, gpu=False)
-        output = model.recognize(audio_batch,audio_length,config, batch=True, gpu=True)
+        output = model.recognize(audio_batch,audio_length, batch=True, gpu=True)
         check = []
         output = output.cpu().detach().tolist()
         for i in output:

@@ -14,13 +14,13 @@ class ListenAttendSpell(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, inputs, input_lengths, targets):
+    def forward(self, inputs, input_lengths, targets, target_lengths):
         encoder_outputs, _ = self.encoder(inputs, input_lengths)
-        loss = self.decoder(targets, encoder_outputs)
+        loss = self.decoder(targets, encoder_outputs, target_lengths)
         return loss
     
     @torch.no_grad()
-    def recognize(self, input, input_length, config, batch=False, gpu=False):
+    def recognize(self, input, input_length, batch=False, gpu=False):
         if not batch:
             encoder_outputs, _ = self.encoder(input.unsqueeze(0), input_length)
             output = self.decoder.greedy_decoding(encoder_outputs[0])

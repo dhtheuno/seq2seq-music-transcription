@@ -48,30 +48,43 @@ class MidiAudioDataset(Dataset):
     def __getitem__(self, index):
         data = self.data[index]
 
-        sequence_length = np.random.randint(1,200)
-        frames_length = data['frames'].shape[0]
-        start_seuqnece = np.random.randint(0,int(frames_length-sequence_length))
-        end_sequence = start_seuqnece+sequence_length
-        
-        start = data['event_start_indices'][start_seuqnece]
-        end = data['event_end_indices'][end_sequence]
-        
-        target_events = {}
-        target_events['targets']= data['events'][start:end]
-        
-        output = self.run_length_encode_shifts(target_events)
-        target_length = len(output['targets'])
+        #sequence_length = np.random.randint(1,250)
+        target_length = 0 
+        while target_length == 0:
+            sequence_length = random.randint(1,200)
+            frames_length = data['frames'].shape[0]
+            #start_seuqnece = np.random.randint(0,int(frames_length-sequence_length))
+            start_seuqnece = random.randint(0,int(frames_length-sequence_length)-1)
+            end_sequence = start_seuqnece+sequence_length
+            
+            start = data['event_start_indices'][start_seuqnece]
+            end = data['event_end_indices'][end_sequence]
+            
+            target_events = {}
+            target_events['targets']= data['events'][start:end]
+            
+            output = self.run_length_encode_shifts(target_events)
+            target_length = len(output['targets'])
 
         input_samples = spectrograms.flatten_frames(data['frames'][start_seuqnece:end_sequence])
         audio = spectrograms.compute_spectrogram(input_samples, self.spectrogram_config).numpy()
         
         audio = torch.FloatTensor(audio)
         label = torch.LongTensor(self.vocab._encode(output['targets']))
+        label_length = int(len(label))+1
         #label = torch.LongTensor((output['targets']))
 
 
-        audio_length = int(audio.shape[0])
-        label_length = int(target_length)
+        audio_length = int(audio.size(0))
+        if audio_length <= 0:
+            print("yesesesesesese")
+            print(label)
+            print(label_length)
+            print(sequence_length)
+            print(start_seuqnece)
+            print(end_sequence)
+            print(data['frames'][start_seuqnece:end_sequence])
+        #label_length = int(target_length)
 
         return {
             'audio': audio,
@@ -177,7 +190,6 @@ class MAESTRO(MidiAudioDataset):
             return result
         else:
             return result
-
 def worker_init_fn(worker_id):
     torch_seed = torch.initial_seed()
     random.seed(torch_seed + worker_id)
@@ -200,7 +212,7 @@ def collate_fn(batch):
     audio_batch = pad_sequence(audios, audio=True)
     label_batch = pad_sequence(labels, audio=False)
     audio_lengths = torch.Tensor(audio_lengths)
-    labels_lengths = torch.Tensor(labels_lengths)
+    labels_lengths = torch.LongTensor(labels_lengths)
     
     sorted_input_lengths, indices = torch.sort(audio_lengths, descending=True)
     
