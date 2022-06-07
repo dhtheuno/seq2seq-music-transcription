@@ -11,7 +11,7 @@
 ## Model Structure
 ### Encoder
 - 4 Layers of BI-LSTM 
-#### Decoder
+### Decoder
 - Additive attention with 1 Layers of Uni-LSTM with linear-layer 
 
 ## Result
